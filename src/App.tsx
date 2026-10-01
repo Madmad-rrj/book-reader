@@ -2,14 +2,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { PdfToolbar } from "./components/PdfToolbar";
 import { PdfViewer } from "./components/PdfViewer";
-import { SelectionInfo } from "./components/SelectionInfo";
+import { TranslationPanel } from "./components/TranslationPanel";
 import { loadPdfFromFile, nextScale } from "./pdf/pdfLoader";
 import { EMPTY_SELECTION, type PdfSelection } from "./types/PdfSelection";
 
 /**
  * App giu 2 loai state:
  * - state cua document (file, so trang, scale) — chi de hien thi tren UI
- * - PdfSelection — output duy nhat cua Phase 1, se duoc dung o cac phase sau
+ * - PdfSelection — output duy nhat cua Phase 1
+ *
+ * Translation (Phase 2) la CONSUMER cua PdfSelection: App chi truyen
+ * `selection` xuong TranslationPanel, khong de translation can thiep nguoc lai
+ * vao qua trinh lay selection cua PDF.
  */
 export function App() {
     const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
@@ -80,9 +84,11 @@ export function App() {
                     scale={scale}
                     onSelectionChange={handleSelectionChange}
                     onCurrentPageChange={handleCurrentPageChange}
+                    onZoomIn={handleZoomIn}
+                    onZoomOut={handleZoomOut}
                 />
 
-                <SelectionInfo selection={selection} />
+                <TranslationPanel selection={selection} />
             </main>
         </div>
     );

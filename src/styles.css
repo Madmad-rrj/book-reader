@@ -18,7 +18,10 @@ html,
 body,
 #root {
     height: 100%;
+    width: 100%;
     margin: 0;
+    padding: 0;
+    overflow: hidden;
 }
 
 body {
@@ -32,12 +35,19 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100%;
+    overflow: hidden;
 }
 
 .app__body {
     display: flex;
+    flex-direction: row;
     flex: 1;
     min-height: 0;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
 }
 
 .app__error {
@@ -52,21 +62,22 @@ body {
 .toolbar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
+    gap: 28px;
+    padding: 28px 36px;
+    min-height: 190px;
     background: var(--color-panel);
     border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .toolbar button {
-    min-width: 36px;
-    padding: 6px 12px;
-    font-size: 14px;
-    color: var(--color-text);
-    background: #38405a;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    cursor: pointer;
+    min-width: 100px;
+    min-height: 120px;
+    padding: 14px 24px;
+    font-size: 40px;
+    border-radius: 12px;
 }
 
 .toolbar button:hover:not(:disabled) {
@@ -83,7 +94,7 @@ body {
 }
 
 .toolbar__file-name {
-    font-size: 13px;
+    font-size: 40px;
     color: var(--color-muted);
     max-width: 320px;
     overflow: hidden;
@@ -96,35 +107,66 @@ body {
 }
 
 .toolbar__zoom {
-    min-width: 48px;
+    min-width: 56px;
     text-align: center;
-    font-size: 13px;
+    font-size: 50px;
     color: var(--color-muted);
 }
 
 .toolbar__page {
-    padding-left: 12px;
+    padding-left: 14px;
     border-left: 1px solid var(--color-border);
+    font-size: 50px;
     font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Viewer ---------- */
 
-.pdf-viewer {
+.pdf-pane {
+    display: flex;
+    flex: 1 1 0%;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.pdf-scroll-container {
     position: relative;
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
     overflow: auto;
     padding: 24px;
     background: #171b24;
-    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+}
+.pdf-scroll-container::-webkit-scrollbar {
+    width: 20px;
+    height: 20px;
 }
 
+.pdf-scroll-container::-webkit-scrollbar-track {
+    background: #1f2430;
+}
+
+.pdf-scroll-container::-webkit-scrollbar-thumb {
+    background: #667085;
+    border: 4px solid #1f2430;
+    border-radius: 10px;
+}
+
+.pdf-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #7b879f;
+}
 .pdf-viewer__placeholder {
     display: grid;
     place-content: center;
     gap: 4px;
     height: 100%;
     color: var(--color-muted);
+    font-size: 50px;
     text-align: center;
 }
 
@@ -133,6 +175,7 @@ body {
     margin: 0 auto 20px;
     background: #fff;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
 }
 
 .pdf-page__canvas {
@@ -269,35 +312,43 @@ body {
     position: absolute;
     right: -44px;
     top: 0;
-    font-size: 12px;
+    font-size: 50px;
     color: var(--color-muted);
+    user-select: none;
+    pointer-events: none;
 }
 
-/* ---------- Selection debug panel ---------- */
+/* ---------- Translation sidebar ---------- */
 
+.translation-panel,
 .selection-info {
-    width: 320px;
-    flex-shrink: 0;
-    padding: 16px;
+    width: 340px;
+    min-width: 1500px;
+    max-width: 1500px;
+    flex: 0 0 340px;
+    height: 100%;
+    padding: 20px;
     overflow-y: auto;
+    overflow-x: hidden;
     background: var(--color-panel);
     border-left: 1px solid var(--color-border);
+    box-sizing: border-box;
 }
 
-.selection-info__title {
-    margin: 0 0 6px;
-    font-size: 12px;
+.translation-panel__title {
+    margin: 0 0 8px;
+    font-size: 60px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-muted);
 }
 
-.selection-info__text {
-    margin: 0 0 22px;
-    padding: 10px;
-    min-height: 44px;
-    font-size: 15px;
+.translation-panel__text {
+    margin: 0 0 24px;
+    padding: 12px;
+    min-height: 52px;
+    font-size: 60px;
     line-height: 1.5;
     background: #232936;
     border: 1px solid var(--color-border);
@@ -306,13 +357,38 @@ body {
     word-break: break-word;
 }
 
-.selection-info__text--empty {
+.translation-panel__text--empty {
     color: var(--color-muted);
     font-style: italic;
 }
 
-.selection-info__page {
-    margin: 0;
-    font-size: 20px;
+/* Trang thai dang cho (dang chuan bi / dang dich). */
+.translation-panel__text--muted {
+    color: var(--color-muted);
+}
+
+.translation-panel__text--error {
+    color: #fca5a5;
+    border-color: #7f1d1d;
+}
+
+.translation-panel__body {
+    margin-bottom: 12px;
+}
+
+.translation-panel__body .translation-panel__text:last-child {
+    margin-bottom: 0;
+}
+
+.translation-panel__page {
+    margin: 0 0 24px;
+    font-size: 50px;
     font-variant-numeric: tabular-nums;
+}
+
+.translation-panel__hint {
+    margin: 14px 0 0;
+    font-size: 50px;
+    line-height: 1.4;
+    color: var(--color-muted);
 }

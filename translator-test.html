@@ -1,161 +1,1087 @@
+
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Edge Translator API Test</title>
+    <meta charset="UTF-8" />
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    />
+
+    <title>Translator Benchmark</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
+            margin: 0;
+            padding: 40px 20px;
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Arial,
+                sans-serif;
+            background: #f5f5f5;
+            color: #222;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
             padding: 20px;
+            margin-bottom: 20px;
         }
 
         textarea {
             width: 100%;
-            height: 150px;
-            font-size: 16px;
-            padding: 10px;
-            box-sizing: border-box;
+            min-height: 120px;
+            resize: vertical;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font: inherit;
         }
 
         button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
+            margin-top: 12px;
+            padding: 10px 18px;
+            border: 0;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            font-size: 15px;
             cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
         }
 
         #status {
             margin-top: 15px;
-            padding: 10px;
-            background: #eee;
+            padding: 12px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            white-space: pre-wrap;
         }
 
-        #result {
-            margin-top: 20px;
+        .progress-container {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .progress-text {
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #2563eb;
+            transition: width 0.2s ease;
+        }
+
+        .summary {
+            display: none;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .summary-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
             padding: 15px;
-            border: 1px solid #ccc;
-            min-height: 80px;
-            white-space: pre-wrap;
+        }
+
+        .summary-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .results {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #f3f4f6;
+            white-space: nowrap;
+        }
+
+        .source {
+            max-width: 300px;
+        }
+
+        .translation {
+            max-width: 300px;
+        }
+
+        .ms {
+            white-space: nowrap;
+            font-family: monospace;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+
+        .ready {
+            color: #166534;
+        }
+
+        .loading {
+            color: #92400e;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Microsoft Edge Translator API</h1>
+<div class="container">
 
-    <textarea id="input">The operating system manages computer hardware and software resources.</textarea>
+    <h1>Translator Benchmark</h1>
 
-    <br>
-
-    <button id="translateButton">
-        Translate → Vietnamese
-    </button>
-
-    <div id="status">
-        Checking Translator API...
+    <div class="subtitle">
+        Microsoft Edge Translator vs Google Translate
     </div>
 
-    <h2>Result</h2>
+    <!-- Manual test -->
+    <div class="card">
 
-    <div id="result"></div>
+        <h2>Manual Test</h2>
 
-    <script>
-        const input = document.getElementById("input");
-        const button = document.getElementById("translateButton");
-        const status = document.getElementById("status");
-        const result = document.getElementById("result");
+        <textarea id="input">The operating system manages computer resources.</textarea>
 
-        // Kiểm tra Edge có Translator API hay không
-        if (!("Translator" in window)) {
-            status.textContent =
-                "❌ Translator API không khả dụng trong trình duyệt này.";
-            button.disabled = true;
-        } else {
-            status.textContent =
-                "✅ Translator API được hỗ trợ.";
+        <br />
+
+        <button id="manualButton">
+            Translate
+        </button>
+
+        <div id="manualStatus">
+            Initializing Microsoft Translator...
+        </div>
+
+        <div id="manualResult"></div>
+
+    </div>
+
+
+    <!-- Benchmark -->
+    <div class="card">
+
+        <h2>10 Sentence Benchmark</h2>
+
+        <p>
+            The test runs the same 10 English sentences through both
+            translation services and measures the translation time.
+        </p>
+
+        <button id="runButton" disabled>
+            Run 10 tests
+        </button>
+
+        <div class="progress-container" id="progressContainer">
+
+            <div class="progress-text" id="progressText">
+                0/10
+            </div>
+
+            <div class="progress-bar">
+                <div
+                    class="progress-fill"
+                    id="progressFill"
+                ></div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Summary -->
+    <div
+        class="card summary"
+        id="summary"
+    >
+
+        <h2>Average</h2>
+
+        <div class="summary-grid">
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    Microsoft Edge Translator
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="microsoftAverage"
+                >
+                    -
+                </div>
+
+            </div>
+
+            <div class="summary-item">
+
+                <div class="summary-title">
+                    Google Translate
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="googleAverage"
+                >
+                    -
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Results -->
+    <div
+        class="card"
+        id="resultsCard"
+        style="display: none;"
+    >
+
+        <h2>Results</h2>
+
+        <div class="results">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>#</th>
+
+                        <th>English</th>
+
+                        <th>Microsoft Translation</th>
+
+                        <th>Microsoft Time</th>
+
+                        <th>Google Translation</th>
+
+                        <th>Google Time</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="resultsBody"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const TEST_SENTENCES = [
+
+    "The operating system manages computer resources.",
+
+    "A process is a program in execution.",
+
+    "The scheduler determines which process should run next.",
+
+    "Each process has its own address space and execution state.",
+
+    "The operating system allocates memory to processes when they need it.",
+
+    "If a process terminates unexpectedly, the operating system must release its resources.",
+
+    "Multiple threads within the same process share the process's memory space.",
+
+    "A race condition occurs when the behavior of a program depends on the timing of concurrent operations.",
+
+    "The mutex ensures that only one thread can access the critical section at a time.",
+
+    "The database transaction is rolled back if any operation in the transaction fails."
+
+];
+
+
+let translator = null;
+
+
+/*
+ * ------------------------------------------------------------
+ * DOM
+ * ------------------------------------------------------------
+ */
+
+const input =
+    document.getElementById("input");
+
+const manualButton =
+    document.getElementById("manualButton");
+
+const manualStatus =
+    document.getElementById("manualStatus");
+
+const manualResult =
+    document.getElementById("manualResult");
+
+const runButton =
+    document.getElementById("runButton");
+
+const progressContainer =
+    document.getElementById("progressContainer");
+
+const progressText =
+    document.getElementById("progressText");
+
+const progressFill =
+    document.getElementById("progressFill");
+
+const resultsCard =
+    document.getElementById("resultsCard");
+
+const resultsBody =
+    document.getElementById("resultsBody");
+
+const summary =
+    document.getElementById("summary");
+
+const microsoftAverage =
+    document.getElementById("microsoftAverage");
+
+const googleAverage =
+    document.getElementById("googleAverage");
+
+
+/*
+ * ------------------------------------------------------------
+ * Initialize Microsoft Translator
+ * ------------------------------------------------------------
+ */
+
+async function initTranslator() {
+
+    if (typeof window.Translator !== "function") {
+
+        manualStatus.innerHTML =
+            '<span class="error">' +
+            '❌ Microsoft Translator API is not available.' +
+            '</span>';
+
+        return;
+
+    }
+
+
+    try {
+
+        manualStatus.textContent =
+            "Checking Microsoft Translator availability...";
+
+
+        const availability =
+            await Translator.availability({
+
+                sourceLanguage: "en",
+
+                targetLanguage: "vi"
+
+            });
+
+
+        console.log(
+            "Microsoft availability:",
+            availability
+        );
+
+
+        if (availability === "unavailable") {
+
+            manualStatus.innerHTML =
+                '<span class="error">' +
+                '❌ English → Vietnamese is unavailable.' +
+                '</span>';
+
+            return;
+
         }
 
-        button.addEventListener("click", async () => {
+
+        manualStatus.textContent =
+            "Creating Microsoft Translator session...";
+
+
+        /*
+         * IMPORTANT:
+         *
+         * create() happens only ONCE.
+         *
+         * Model download time is NOT included
+         * in the translation benchmark.
+         */
+
+        const createStart =
+            performance.now();
+
+
+        translator =
+            await Translator.create({
+
+                sourceLanguage: "en",
+
+                targetLanguage: "vi"
+
+            });
+
+
+        const createTime =
+            performance.now() - createStart;
+
+
+        console.log(
+            `Translator.create(): ${createTime.toFixed(2)} ms`
+        );
+
+
+        manualStatus.innerHTML =
+            '<span class="ready">' +
+            `✅ Microsoft Translator ready. ` +
+            `create(): ${createTime.toFixed(2)} ms` +
+            '</span>';
+
+
+        runButton.disabled = false;
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        manualStatus.innerHTML =
+            '<span class="error">' +
+            "❌ Failed to initialize Microsoft Translator: " +
+            escapeHtml(error.message || String(error)) +
+            "</span>";
+
+    }
+
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * Microsoft translation
+ * ------------------------------------------------------------
+ */
+
+async function translateMicrosoft(text) {
+
+    const start =
+        performance.now();
+
+
+    const translation =
+        await translator.translate(text);
+
+
+    const ms =
+        performance.now() - start;
+
+
+    return {
+
+        translation,
+
+        ms
+
+    };
+
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * Google translation
+ * ------------------------------------------------------------
+ */
+
+async function translateGoogle(text) {
+
+    const start =
+        performance.now();
+
+
+    const url =
+        "https://translate.googleapis.com/translate_a/single" +
+        "?client=gtx" +
+        "&sl=en" +
+        "&tl=vi" +
+        "&dt=t" +
+        "&q=" +
+        encodeURIComponent(text);
+
+
+    const response =
+        await fetch(url);
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            `Google HTTP ${response.status}`
+        );
+
+    }
+
+
+    const data =
+        await response.json();
+
+
+    const translation =
+        data[0]
+            .map(segment => segment?.[0] ?? "")
+            .join("");
+
+
+    const ms =
+        performance.now() - start;
+
+
+    return {
+
+        translation,
+
+        ms
+
+    };
+
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * Manual translation
+ * ------------------------------------------------------------
+ */
+
+manualButton.addEventListener(
+    "click",
+    async () => {
+
+        const text =
+            input.value.trim();
+
+
+        if (!text) {
+
+            manualResult.textContent =
+                "Please enter some text.";
+
+            return;
+
+        }
+
+
+        if (!translator) {
+
+            manualResult.textContent =
+                "Microsoft Translator is not ready.";
+
+            return;
+
+        }
+
+
+        manualButton.disabled = true;
+
+
+        try {
+
+            const microsoft =
+                await translateMicrosoft(text);
+
+
+            const google =
+                await translateGoogle(text);
+
+
+            manualResult.innerHTML = `
+
+                <div class="card">
+
+                    <h3>Microsoft Edge Translator</h3>
+
+                    <p>
+                        ${escapeHtml(
+                            microsoft.translation
+                        )}
+                    </p>
+
+                    <strong>
+                        ${microsoft.ms.toFixed(2)} ms
+                    </strong>
+
+                </div>
+
+
+                <div class="card">
+
+                    <h3>Google Translate</h3>
+
+                    <p>
+                        ${escapeHtml(
+                            google.translation
+                        )}
+                    </p>
+
+                    <strong>
+                        ${google.ms.toFixed(2)} ms
+                    </strong>
+
+                </div>
+
+            `;
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            manualResult.innerHTML =
+                '<span class="error">' +
+                escapeHtml(
+                    error.message || String(error)
+                ) +
+                '</span>';
+
+        }
+
+
+        manualButton.disabled = false;
+
+    }
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * Run 10 tests
+ * ------------------------------------------------------------
+ */
+
+runButton.addEventListener(
+    "click",
+    async () => {
+
+        if (!translator) {
+
+            alert(
+                "Microsoft Translator is not ready."
+            );
+
+            return;
+
+        }
+
+
+        runButton.disabled = true;
+
+        manualButton.disabled = true;
+
+
+        resultsBody.innerHTML = "";
+
+        resultsCard.style.display = "block";
+
+        summary.style.display = "none";
+
+        progressContainer.style.display = "block";
+
+
+        progressText.textContent =
+            "0/10";
+
+        progressFill.style.width =
+            "0%";
+
+
+        const results = [];
+
+
+        let microsoftTotal = 0;
+
+        let googleTotal = 0;
+
+
+        for (
+            let i = 0;
+            i < TEST_SENTENCES.length;
+            i++
+        ) {
+
+            const sentence =
+                TEST_SENTENCES[i];
+
+
+            /*
+             * Update progress BEFORE translation
+             */
+
+            progressText.textContent =
+                `${i + 1}/${TEST_SENTENCES.length}`;
+
+
+            progressFill.style.width =
+                `${((i + 1) / TEST_SENTENCES.length) * 100}%`;
+
+
+            /*
+             * Microsoft
+             */
+
+            let microsoft;
 
             try {
-                const text = input.value.trim();
 
-                if (!text) {
-                    return;
-                }
-
-                status.textContent = "Checking model...";
-
-                // Kiểm tra model English → Vietnamese
-                const availability = await Translator.availability({
-                    sourceLanguage: "en",
-                    targetLanguage: "vi"
-                });
-
-                console.log("Availability:", availability);
-
-                if (availability === "unavailable") {
-                    status.textContent =
-                        "❌ English → Vietnamese không khả dụng.";
-                    return;
-                }
-
-                if (
-                    availability === "downloadable" ||
-                    availability === "downloading"
-                ) {
-                    status.textContent =
-                        "⬇️ Edge cần tải translation model...";
-                }
-
-                // Tạo Translator session
-                const translator = await Translator.create({
-                    sourceLanguage: "en",
-                    targetLanguage: "vi",
-
-                    monitor(monitor) {
-                        monitor.addEventListener(
-                            "downloadprogress",
-                            event => {
-
-                                const percent =
-                                    (event.loaded / event.total) * 100;
-
-                                status.textContent =
-                                    `⬇️ Downloading model: ${percent.toFixed(1)}%`;
-                            }
-                        );
-                    }
-                });
-
-                status.textContent = "🔄 Translating...";
-
-                const start = performance.now();
-
-                // Dịch
-                const translated =
-                    await translator.translate(text);
-
-                const end = performance.now();
-
-                result.textContent = translated;
-
-                status.textContent =
-                    `✅ Done — ${(end - start).toFixed(0)} ms`;
+                microsoft =
+                    await translateMicrosoft(
+                        sentence
+                    );
 
             } catch (error) {
 
-                console.error(error);
+                microsoft = {
 
-                status.textContent =
-                    "❌ Error: " + error.message;
+                    translation:
+                        "ERROR: " +
+                        (error.message ||
+                            String(error)),
+
+                    ms: null
+
+                };
+
             }
-        });
-    </script>
+
+
+            /*
+             * Google
+             */
+
+            let google;
+
+            try {
+
+                google =
+                    await translateGoogle(
+                        sentence
+                    );
+
+            } catch (error) {
+
+                google = {
+
+                    translation:
+                        "ERROR: " +
+                        (error.message ||
+                            String(error)),
+
+                    ms: null
+
+                };
+
+            }
+
+
+            /*
+             * Save
+             */
+
+            results.push({
+
+                number: i + 1,
+
+                source: sentence,
+
+                microsoft,
+
+                google
+
+            });
+
+
+            if (
+                microsoft.ms !== null
+            ) {
+
+                microsoftTotal +=
+                    microsoft.ms;
+
+            }
+
+
+            if (
+                google.ms !== null
+            ) {
+
+                googleTotal +=
+                    google.ms;
+
+            }
+
+
+            /*
+             * Add row
+             */
+
+            const row =
+                document.createElement("tr");
+
+
+            row.innerHTML = `
+
+                <td>
+                    ${i + 1}
+                </td>
+
+                <td class="source">
+                    ${escapeHtml(sentence)}
+                </td>
+
+                <td class="translation">
+                    ${escapeHtml(
+                        microsoft.translation
+                    )}
+                </td>
+
+                <td class="ms">
+                    ${
+                        microsoft.ms === null
+                            ? "ERROR"
+                            : microsoft.ms.toFixed(2) + " ms"
+                    }
+                </td>
+
+                <td class="translation">
+                    ${escapeHtml(
+                        google.translation
+                    )}
+                </td>
+
+                <td class="ms">
+                    ${
+                        google.ms === null
+                            ? "ERROR"
+                            : google.ms.toFixed(2) + " ms"
+                    }
+                </td>
+
+            `;
+
+
+            resultsBody.appendChild(row);
+
+
+            /*
+             * Allow browser UI to update
+             * between tests.
+             */
+
+            await new Promise(
+                resolve =>
+                    setTimeout(resolve, 50)
+            );
+
+        }
+
+
+        /*
+         * ----------------------------------------------------
+         * Average
+         * ----------------------------------------------------
+         */
+
+        const microsoftCount =
+            results.filter(
+                r => r.microsoft.ms !== null
+            ).length;
+
+
+        const googleCount =
+            results.filter(
+                r => r.google.ms !== null
+            ).length;
+
+
+        const microsoftAvg =
+            microsoftCount > 0
+                ? microsoftTotal / microsoftCount
+                : 0;
+
+
+        const googleAvg =
+            googleCount > 0
+                ? googleTotal / googleCount
+                : 0;
+
+
+        microsoftAverage.textContent =
+            `${microsoftAvg.toFixed(2)} ms`;
+
+
+        googleAverage.textContent =
+            `${googleAvg.toFixed(2)} ms`;
+
+
+        summary.style.display =
+            "block";
+
+
+        progressText.textContent =
+            "10/10 — Complete";
+
+
+        progressFill.style.width =
+            "100%";
+
+
+        console.log(
+            "Benchmark results:",
+            results
+        );
+
+
+        console.log(
+            "Microsoft average:",
+            microsoftAvg
+        );
+
+
+        console.log(
+            "Google average:",
+            googleAvg
+        );
+
+
+        runButton.disabled = false;
+
+        manualButton.disabled = false;
+
+    }
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * HTML escaping
+ * ------------------------------------------------------------
+ */
+
+function escapeHtml(text) {
+
+    return String(text)
+
+        .replaceAll("&", "&amp;")
+
+        .replaceAll("<", "&lt;")
+
+        .replaceAll(">", "&gt;")
+
+        .replaceAll('"', "&quot;")
+
+        .replaceAll("'", "&#039;");
+
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * Start
+ * ------------------------------------------------------------
+ */
+
+initTranslator();
+
+</script>
 
 </body>
 </html>
+

@@ -8,12 +8,9 @@ import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 /** Khoang zoom hop le (0.5 = 50%, 3 = 300%). */
-const MIN_SCALE = 0.5;
-const MAX_SCALE = 3;
+const MIN_SCALE = 1;
+const MAX_SCALE = 7;
 const SCALE_STEP = 0.25;
-
-/** Do phan giai render thuc te: render o 2x roi hien thi o 1x => text sac net hon. */
-const DEFAULT_DEVICE_PIXEL_RATIO = 2;
 
 /**
  * Class ma PDF.js tu gan vao `.textLayer` khi nguoi dung dang keo chuot.
@@ -31,10 +28,14 @@ export interface LoadedPdf {
     pageCount: number;
 }
 
-export interface RenderedPage {
-    pageNumber: number;
-    /** Task cua lan render nay, dung de cancel khi component unmount / doi zoom. */
-    renderTask: pdfjsLib.RenderTask | null;
+export interface RenderPageHandle {
+    cancel: () => void;
+}
+
+export interface RenderedPageResult {
+    canvas: HTMLCanvasElement;
+    textLayerHost: HTMLElement;
+    renderDpr: number;
 }
 
 /** Scale cho lan zoom tiep theo, da bi chan trong khoang [MIN_SCALE, MAX_SCALE]. */
@@ -87,14 +88,16 @@ export async function renderPageToContainer(
     canvas: HTMLCanvasElement,
     textLayerHost: HTMLElement,
     scale: number,
-    devicePixelRatio: number = DEFAULT_DEVICE_PIXEL_RATIO
-): Promise<pdfjsLib.RenderTask | null> {
+    onRenderStart?: (handle: RenderPageHandle) => void
+): Promise<RenderedPageResult> {
     const viewport = page.getViewport({ scale });
+    const browserDpr = window.devicePixelRatio || 1;
+    const renderDpr = Math.min(browserDpr, 2);
 
-    canvas.width = Math.floor(viewport.width * devicePixelRatio);
-    canvas.height = Math.floor(viewport.height * devicePixelRatio);
-    canvas.style.width = `${Math.floor(viewport.width)}px`;
-    canvas.style.height = `${Math.floor(viewport.height)}px`;
+    canvas.width = Math.floor(viewport.width * renderDpr);
+    canvas.height = Math.floor(viewport.height * renderDpr);
+    canvas.style.width = `${viewport.width}px`;
+    canvas.style.height = `${viewport.height}px`;
 
     // Xoa text layer cu truoc khi render lai (vi du khi doi zoom, hoac khi
     // <StrictMode> chay effect 2 lan luc dev va xoa luon ket qua cua lan render 1).
@@ -129,7 +132,7 @@ export async function renderPageToContainer(
         canvasContext,
         viewport,
         // Ve o do phan giai cao hon roi CSS scale xuong => chu dam, khong bi mo.
-        transform: devicePixelRatio === 1 ? undefined : [devicePixelRatio, 0, 0, devicePixelRatio, 0, 0],
+        transform: renderDpr === 1 ? undefined : [renderDpr, 0, 0, renderDpr, 0, 0],
     });
 
     // Text layer la <span> trong suot nam tren canvas; `data-page-number` giup
@@ -142,11 +145,17 @@ export async function renderPageToContainer(
         viewport,
     });
 
+    onRenderStart?.({
+        cancel: () => {
+            canvasRenderTask.cancel();
+            textLayer.cancel();
+        },
+    });
     const textLayerRenderTask = textLayer.render();
 
     await Promise.all([canvasRenderTask.promise, textLayerRenderTask]);
 
-    return canvasRenderTask;
+    return { canvas, textLayerHost, renderDpr };
 }
 
 export { MIN_SCALE, MAX_SCALE, SCALE_STEP };
