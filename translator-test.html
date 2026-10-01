@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Edge Translator API Test</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            font-size: 16px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            background: #eee;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            min-height: 80px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Microsoft Edge Translator API</h1>
+
+    <textarea id="input">The operating system manages computer hardware and software resources.</textarea>
+
+    <br>
+
+    <button id="translateButton">
+        Translate → Vietnamese
+    </button>
+
+    <div id="status">
+        Checking Translator API...
+    </div>
+
+    <h2>Result</h2>
+
+    <div id="result"></div>
+
+    <script>
+        const input = document.getElementById("input");
+        const button = document.getElementById("translateButton");
+        const status = document.getElementById("status");
+        const result = document.getElementById("result");
+
+        // Kiểm tra Edge có Translator API hay không
+        if (!("Translator" in window)) {
+            status.textContent =
+                "❌ Translator API không khả dụng trong trình duyệt này.";
+            button.disabled = true;
+        } else {
+            status.textContent =
+                "✅ Translator API được hỗ trợ.";
+        }
+
+        button.addEventListener("click", async () => {
+
+            try {
+                const text = input.value.trim();
+
+                if (!text) {
+                    return;
+                }
+
+                status.textContent = "Checking model...";
+
+                // Kiểm tra model English → Vietnamese
+                const availability = await Translator.availability({
+                    sourceLanguage: "en",
+                    targetLanguage: "vi"
+                });
+
+                console.log("Availability:", availability);
+
+                if (availability === "unavailable") {
+                    status.textContent =
+                        "❌ English → Vietnamese không khả dụng.";
+                    return;
+                }
+
+                if (
+                    availability === "downloadable" ||
+                    availability === "downloading"
+                ) {
+                    status.textContent =
+                        "⬇️ Edge cần tải translation model...";
+                }
+
+                // Tạo Translator session
+                const translator = await Translator.create({
+                    sourceLanguage: "en",
+                    targetLanguage: "vi",
+
+                    monitor(monitor) {
+                        monitor.addEventListener(
+                            "downloadprogress",
+                            event => {
+
+                                const percent =
+                                    (event.loaded / event.total) * 100;
+
+                                status.textContent =
+                                    `⬇️ Downloading model: ${percent.toFixed(1)}%`;
+                            }
+                        );
+                    }
+                });
+
+                status.textContent = "🔄 Translating...";
+
+                const start = performance.now();
+
+                // Dịch
+                const translated =
+                    await translator.translate(text);
+
+                const end = performance.now();
+
+                result.textContent = translated;
+
+                status.textContent =
+                    `✅ Done — ${(end - start).toFixed(0)} ms`;
+
+            } catch (error) {
+
+                console.error(error);
+
+                status.textContent =
+                    "❌ Error: " + error.message;
+            }
+        });
+    </script>
+
+</body>
+</html>

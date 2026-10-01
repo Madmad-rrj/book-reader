@@ -1,0 +1,318 @@
+:root {
+    --color-bg: #1f2430;
+    --color-panel: #2b3242;
+    --color-border: #3b435a;
+    --color-text: #e8ecf4;
+    --color-muted: #98a2b8;
+    --color-accent: #4f8ef7;
+
+    color-scheme: dark;
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.app__body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.app__error {
+    padding: 8px 16px;
+    background: #7f1d1d;
+    color: #fee2e2;
+    font-size: 14px;
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--color-panel);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.toolbar button {
+    min-width: 36px;
+    padding: 6px 12px;
+    font-size: 14px;
+    color: var(--color-text);
+    background: #38405a;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.toolbar button:hover:not(:disabled) {
+    border-color: var(--color-accent);
+}
+
+.toolbar button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.toolbar__file-input {
+    display: none;
+}
+
+.toolbar__file-name {
+    font-size: 13px;
+    color: var(--color-muted);
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.toolbar__spacer {
+    flex: 1;
+}
+
+.toolbar__zoom {
+    min-width: 48px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--color-muted);
+}
+
+.toolbar__page {
+    padding-left: 12px;
+    border-left: 1px solid var(--color-border);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Viewer ---------- */
+
+.pdf-viewer {
+    position: relative;
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    background: #171b24;
+    scroll-behavior: smooth;
+}
+
+.pdf-viewer__placeholder {
+    display: grid;
+    place-content: center;
+    gap: 4px;
+    height: 100%;
+    color: var(--color-muted);
+    text-align: center;
+}
+
+.pdf-page {
+    position: relative;
+    margin: 0 auto 20px;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.pdf-page__canvas {
+    display: block;
+}
+
+/* ==========================================================================
+   PDF.js text layer
+   ==========================================================================
+   DAY LA PHAN CSS BAT BUOC PHAI DUNG THEO PDF.js.
+
+   Text layer khong phai la mot <div> text binh thuong: PDF.js dat tung "chunk"
+   text vao mot <span> co `position: absolute`, `left/top` tinh bang % theo kich
+   thuoc trang, va kich thuoc chu duoc dieu khien bang bien CSS
+   `--font-height` + `--text-scale-factor` (KHONG dung font-size thuc).
+
+   Vi vay neu ta tu viet lai CSS nay mot cach "tuong duong" thi span se nam sai
+   cho hoac co kich thuoc sai -> text selection bi lech va bi cat cut.
+   Cac quy tac duoi day duoc chep lai tu `pdfjs-dist/web/pdf_viewer.css`
+   (muc `.textLayer`) — day chinh la contract ma TextLayer cua PDF.js can.
+
+   Xem ghi chu chi tiet trong README muc "Vi sao khong tu viet CSS". */
+
+.textLayer {
+    position: absolute;
+    inset: 0;
+    overflow: clip;
+    opacity: 1;
+    line-height: 1;
+    text-align: initial;
+    text-size-adjust: none;
+    forced-color-adjust: none;
+    transform-origin: 0 0;
+    caret-color: CanvasText;
+    z-index: 0;
+
+    /* Cac bien dieu khien KICH THUOC text layer.
+
+       LUU Y: `.textLayer` duoc cai `--scale-factor` truc tiep bang inline style
+       trong pdfLoader (moi lan render). Vi inline style thang moi selector, cac
+       gia tri mac dinh o day chi dung cho truong hop khong co inline style.
+
+       `--min-font-size` duoc TextLayer cua PDF.js tu set tai runtime bang
+       style.setProperty("--min-font-size", ...) — de 1 o day lam gia tri du phong.
+
+       Thu tu quan trong: `--total-scale-factor` PHAI duoc khai bao ngay tai
+       `.textLayer`. Neu khai bao no o mot selector khac manh hon (vi du
+       `.pdf-page`), no se de len gia tri ma `.textLayer` thua huong tu inline
+       style `--scale-factor`, khien text layer dung yen khi zoom (da gap dung loi
+       nay: span giu nguyen 16px o ca 100% lan 150%). */
+    --scale-factor: 1;
+    --user-unit: 1;
+    --total-scale-factor: calc(var(--scale-factor) * var(--user-unit));
+    --scale-round-x: 1px;
+    --scale-round-y: 1px;
+
+    --min-font-size: 1;
+    --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+    --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+.textLayer :is(span, br) {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0 0;
+}
+
+/* PDF.js gan `style="display: none"` cho <br> tai moi cho xuong dong.
+
+   Dieu nay khong chi de "an" <br> di — no lam browser KHONG tra ve <br> khi tao
+   text cua Range (`display: none` bi loai hoan toan), do do ranh gioi dong bi
+   mat va hai tu dinh nhau: "computerhardware".
+
+   Vi vay `extractRangeText` trong pdf/selection.ts tu sinh "\n" cho <br> thay vi
+   phu thuoc vao browser. Ghi chu o day de nguoi sua sau biet rang <br> la
+   `display: none` MOT CACH CO CHU DICH. */
+
+.textLayer > :not(.markedContent),
+.textLayer .markedContent span:not(.markedContent) {
+    z-index: 1;
+
+    /* --font-height duoc PDF.js set cho tung span; font-size thuc duoc suy ra
+       tu day chu khong duoc ghi truc tiep. */
+    --font-height: 0;
+    font-size: calc(var(--text-scale-factor) * var(--font-height));
+
+    --scale-x: 1;
+    --rotate: 0deg;
+    transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+/* PDF.js boc cac chunk text trong <span class="markedContent"> (dung cho Artifact,
+   tagged content...). `display: contents` de span nay khong tao hop layout rieng,
+   neu khong text ben trong se bi lech khoi vi tri PDF.js tinh toan. */
+.textLayer .markedContent {
+    display: contents;
+}
+
+/* Vung chan cuoi text layer.
+
+   Muc dich theo PDF.js: khi nguoi dung keo chuot xuong duoi dong text cuoi cung,
+   diem tha se roi vao <div class="endOfContent"> duoc them tu dong. Div nay co
+   `user-select: none` nen browser se tu dong mo rong selection toi HET dong chua
+   diem keo — neu thieu no, selection bi cat ngay tai ky tu cuoi cung ma con chuot
+   di qua, dung bang trieu chung "thieu phan cuoi cua doan".
+
+   `.endOfContent` KHONG nam trong DOM tinh — TextLayer cua PDF.js append no luc
+   runtime — nen phai co san quy tac CSS nay truoc khi no xuat hien. */
+.textLayer .endOfContent {
+    display: block;
+    position: absolute;
+    inset: 100% 0 0;
+    z-index: 0;
+    cursor: default;
+    user-select: none;
+}
+
+.textLayer.selecting .endOfContent {
+    top: 0;
+}
+
+/* Highlight selection doc de nhan biet doan dang boi tren nen trang trang. */
+.textLayer ::selection {
+    background: rgba(79, 142, 247, 0.35);
+}
+
+.textLayer br::selection {
+    background: transparent;
+}
+
+.pdf-page__label {
+    position: absolute;
+    right: -44px;
+    top: 0;
+    font-size: 12px;
+    color: var(--color-muted);
+}
+
+/* ---------- Selection debug panel ---------- */
+
+.selection-info {
+    width: 320px;
+    flex-shrink: 0;
+    padding: 16px;
+    overflow-y: auto;
+    background: var(--color-panel);
+    border-left: 1px solid var(--color-border);
+}
+
+.selection-info__title {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+}
+
+.selection-info__text {
+    margin: 0 0 22px;
+    padding: 10px;
+    min-height: 44px;
+    font-size: 15px;
+    line-height: 1.5;
+    background: #232936;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.selection-info__text--empty {
+    color: var(--color-muted);
+    font-style: italic;
+}
+
+.selection-info__page {
+    margin: 0;
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+}
