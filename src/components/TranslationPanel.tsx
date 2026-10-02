@@ -1,8 +1,14 @@
+import { useEffect } from "react";
 import type { PdfSelection } from "../types/PdfSelection";
 import { useTranslation, TRANSLATION_DEBOUNCE_MS } from "../translation/useTranslation";
+import type { SavedWord } from "../api/bookReaderApi";
 
 interface TranslationPanelProps {
     selection: PdfSelection;
+    savedWords: SavedWord[];
+    savedStackStatus: "idle" | "loading" | "error";
+    onDeleteSavedWordGroup: (ids: number[]) => void;
+    onTranslationChange: (translation: string) => void;
 }
 
 /**
@@ -15,9 +21,19 @@ interface TranslationPanelProps {
  * Toan bo logic goi Edge Translator nam trong `translation/useTranslation` va
  * `translation/translator`. Component khong biet API cua Edge trong ra sao.
  */
-export function TranslationPanel({ selection }: TranslationPanelProps) {
+export function TranslationPanel({
+    selection,
+    savedWords,
+    savedStackStatus,
+    onDeleteSavedWordGroup,
+    onTranslationChange,
+}: TranslationPanelProps) {
     const { status, translation, errorMessage } = useTranslation(selection.text);
     const hasSelection = selection.text.trim().length > 0;
+
+    useEffect(() => {
+        onTranslationChange(status === "success" ? translation : "");
+    }, [onTranslationChange, status, translation]);
 
     return (
         <aside className="translation-panel">
@@ -43,7 +59,61 @@ export function TranslationPanel({ selection }: TranslationPanelProps) {
                     Dịch sau {TRANSLATION_DEBOUNCE_MS / 1000}s khi bạn ngừng chọn text.
                 </p>
             ) : null}
+
+            <SavedStack
+                savedWords={savedWords}
+                status={savedStackStatus}
+                onDeleteGroup={onDeleteSavedWordGroup}
+            />
         </aside>
+    );
+}
+
+function SavedStack({
+    savedWords,
+    status,
+    onDeleteGroup,
+}: {
+    savedWords: SavedWord[];
+    status: TranslationPanelProps["savedStackStatus"];
+    onDeleteGroup: (ids: number[]) => void;
+}) {
+    const groups = new Map<string, SavedWord[]>();
+    for (const savedWord of savedWords) {
+        const key = `${savedWord.original}\u0000${savedWord.translation}`;
+        const group = groups.get(key) ?? [];
+        group.push(savedWord);
+        groups.set(key, group);
+    }
+
+    return (
+        <section className="saved-stack">
+            <h2 className="translation-panel__title">Saved</h2>
+            {status === "loading" ? (
+                <p className="translation-panel__text translation-panel__text--muted">Loading saved words...</p>
+            ) : status === "error" ? (
+                <p className="translation-panel__text translation-panel__text--error">Saved Stack unavailable</p>
+            ) : groups.size === 0 ? (
+                <p className="translation-panel__text translation-panel__text--empty">No saved words</p>
+            ) : (
+                [...groups.values()].map((group) => (
+                    <div className="saved-stack__item" key={group[0].id}>
+                        <p className="saved-stack__original">{group[0].original}</p>
+                        <p className="saved-stack__translation">{group[0].translation}</p>
+                        <div className="saved-stack__actions">
+                            <span>× {group.length}</span>
+                            <button
+                                type="button"
+                                onClick={() => onDeleteGroup(group.map((savedWord) => savedWord.id))}
+                                aria-label={`Delete ${group[0].original}`}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                ))
+            )}
+        </section>
     );
 }
 
